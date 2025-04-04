@@ -53,12 +53,15 @@ void Database::InsertRow(const std::string& url, const std::map<std::string, int
 {
     pqxx::work txn(conn);
 
-    int doc_id = txn.exec1("INSERT INTO documents (url) VALUES ('" + txn.esc(url) + "') RETURNING id;")[0].as<int>();
+    int doc_id = txn.exec1("INSERT INTO documents (url) VALUES ('" + txn.esc(url) + "') ON CONFLICT (url) DO UPDATE SET url=EXCLUDED.url RETURNING id;")[0].as<int>();
 
     for (const auto& [word, frequency] : word_count)
     {
         int word_id = txn.exec1("INSERT INTO words (word) VALUES ('" + txn.esc(word) + "') ON CONFLICT (word) DO UPDATE SET word=EXCLUDED.word RETURNING id;")[0].as<int>();
-        txn.exec0("INSERT INTO word_frequency (document_id, word_id, frequency) VALUES (" + std::to_string(doc_id) + ", " + std::to_string(word_id) + ", " + std::to_string(frequency) + ");");
+        txn.exec0("INSERT INTO word_frequency (document_id, word_id, frequency) "
+            "VALUES (" + std::to_string(doc_id) + ", " + std::to_string(word_id) + ", " + std::to_string(frequency) + ") "
+            "ON CONFLICT (document_id, word_id) DO UPDATE "
+            "SET frequency = EXCLUDED.frequency;");
     }
     txn.commit();
 }

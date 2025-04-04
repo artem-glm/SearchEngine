@@ -41,17 +41,18 @@ std::vector<std::string> split_words(const std::string& text)
     std::string word;
     std::istringstream stream(text);
 
-    while (stream >> word) {
-        while (!word.empty() && std::ispunct(word.front())) {
-            word.erase(0, 1);
+    for (char c : text) {
+        if (std::isalnum(c)) {
+            word += std::tolower(c);
         }
-        while (!word.empty() && std::ispunct(word.back())) {
-            word.pop_back();
-        }
-
-        if (!word.empty()) {
+        else if (!word.empty()) {
             words.push_back(word);
+            word.clear();
         }
+    }
+
+    if (!word.empty()) {
+        words.push_back(word);
     }
 
     return words;
